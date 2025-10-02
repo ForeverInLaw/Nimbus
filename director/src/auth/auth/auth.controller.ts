@@ -68,6 +68,18 @@ export class AuthController {
     return this.authService.findAllUsers();
   }
 
+  @Post('users')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create new user (Admin only)' })
+  @ApiBody({ type: User })
+  @ApiOkResponse({ type: User, description: 'User created' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @UsePipes(new ValidationPipe())
+  async createUser(@Body() createUserDto: any) {
+    return this.authService.registerUser(createUserDto);
+  }
+
   @Get('users/:id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user by ID (Admin only)' })

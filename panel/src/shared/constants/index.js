@@ -6,7 +6,13 @@
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
-    USERS: '/auth/users',
+  },
+  USERS: {
+    LIST: '/auth/users',
+    CREATE: '/auth/users',
+    DETAIL: (id) => `/auth/users/${id}`,
+    UPDATE: (id) => `/auth/users/${id}`,
+    DELETE: (id) => `/auth/users/${id}`,
   },
   AGENTS: {
     LIST: '/admin/agents',

@@ -50,6 +50,10 @@ export class AuthService {
   }
 
   async updateUser(id: string, updateUserDto: any): Promise<User | null> {
+    // Хэшировать пароль если он передан
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
     return this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true }).exec();
   }
 
