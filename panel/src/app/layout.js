@@ -1,6 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { QueryProvider } from "@/components/providers/query-provider";
+import QueryProvider from "@/shared/components/providers/QueryProvider";
+import ToastProvider from "@/shared/components/providers/ToastProvider";
+import { CommandPalette } from "@/shared/components/command-palette";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,16 +16,18 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Nimbus Control Panel",
-  description: "Agent and DNS management system",
+  description: "Modern admin panel for Nimbus - Agent and DNS management system",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased ${process.env.NEXT_PUBLIC_THEME === 'dark' ? 'dark' : ''}`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProvider>
+          <CommandPalette />
+          <ToastProvider />
           {children}
         </QueryProvider>
       </body>
