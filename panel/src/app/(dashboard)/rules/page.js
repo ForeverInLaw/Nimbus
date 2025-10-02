@@ -1,466 +1,125 @@
-'use client';
+"use client"
 
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { useRules, useCreateRule, useUpdateRule, useDeleteRule } from '@/hooks/use-rules';
-import { useAgents } from '@/hooks/use-agents';
+import { RulesTable, RuleForm } from '@/features/rules/components';
+import {
+  useRules,
+  useCreateRule,
+  useUpdateRule,
+  useDeleteRule,
+} from '@/features/rules/hooks';
 
 export default function RulesPage() {
-  const [showModal, setShowModal] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    type: 'http',
-    match: '',
-    action: 'proxy',
-    target: '',
-    agent: '',
-    sslConfig: {
-      enabled: false,
-      verifyCertificate: true,
-      allowSelfSigned: false
-    }
-  });
 
   const { data: rules = [], isLoading } = useRules();
-  const { data: agents = [] } = useAgents();
-  const createRuleMutation = useCreateRule();
-  const updateRuleMutation = useUpdateRule();
-  const deleteRuleMutation = useDeleteRule();
+  const createMutation = useCreateRule();
+  const updateMutation = useUpdateRule();
+  const deleteMutation = useDeleteRule();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (editingRule) {
-      updateRuleMutation.mutate(
-        { id: editingRule._id, data: formData },
-        {
-          onSuccess: () => {
-            setShowModal(false);
-            setEditingRule(null);
-            resetForm();
-          }
-        }
-      );
-    } else {
-      createRuleMutation.mutate(formData, {
-        onSuccess: () => {
-          setShowModal(false);
-          resetForm();
-        }
-      });
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this rule?')) return;
-    
-    deleteRuleMutation.mutate(id);
+  const handleCreate = () => {
+    setEditingRule(null);
+    setShowDialog(true);
   };
 
   const handleEdit = (rule) => {
     setEditingRule(rule);
-    setFormData({
-      name: rule.name,
-      type: rule.type,
-      match: rule.match,
-      action: rule.action,
-      target: rule.target,
-      agent: rule.agent._id || rule.agent,
-      sslConfig: rule.sslConfig || {
-        enabled: false,
-        verifyCertificate: true,
-        allowSelfSigned: false
-      }
-    });
-    setShowModal(true);
+    setShowDialog(true);
   };
 
-  const handleSslConfigChange = (field, value) => {
-    setFormData({
-      ...formData,
-      sslConfig: {
-        ...formData.sslConfig,
-        [field]: value
-      }
-    });
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this rule?')) return;
+    deleteMutation.mutate(id);
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      type: 'http',
-      match: '',
-      action: 'proxy',
-      target: '',
-      agent: '',
-      sslConfig: {
-        enabled: false,
-        verifyCertificate: true,
-        allowSelfSigned: false
-      }
-    });
+  const handleSubmit = async (data) => {
+    if (editingRule) {
+      updateMutation.mutate(
+        { id: editingRule._id, data },
+        {
+          onSuccess: () => {
+            setShowDialog(false);
+            setEditingRule(null);
+          },
+        }
+      );
+    } else {
+      createMutation.mutate(data, {
+        onSuccess: () => {
+          setShowDialog(false);
+        },
+      });
+    }
   };
 
-  if (isLoading && !rules.length) {
+  const handleCancel = () => {
+    setShowDialog(false);
+    setEditingRule(null);
+  };
+
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Rules</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage routing and filtering rules</p>
+          <h1 className="text-3xl font-bold tracking-tight">Rules</h1>
+          <p className="text-muted-foreground">
+            Define traffic routing rules and policies
+          </p>
         </div>
-        <Button onClick={() => setShowModal(true)} className="w-full sm:w-auto">
-          ➕ Add Rule
+        <Button onClick={handleCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Rule
         </Button>
       </div>
 
-      {/* Desktop Table */}
-      <div className="hidden lg:block">
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Match</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Target</TableHead>
-                  <TableHead>Agent</TableHead>
-                  <TableHead>SSL</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rules.map((rule) => (
-                  <TableRow key={rule._id}>
-                    <TableCell className="font-medium">
-                      {rule.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-xs">
-                        {rule.type.toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {rule.match}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          rule.action === 'block'
-                            ? 'destructive'
-                            : rule.action === 'redirect'
-                              ? 'secondary'
-                              : 'default'
-                        }
-                        className="text-xs"
-                      >
-                        {rule.action}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {rule.target}
-                    </TableCell>
-                    <TableCell>
-                      {typeof rule.agent === 'object' ? rule.agent.name : 'Unknown'}
-                    </TableCell>
-                    <TableCell>
-                      {(rule.type === 'http' || rule.type === 'https') && rule.sslConfig?.enabled ? (
-                        <Badge variant="default" className="text-xs">
-                          SSL Enabled
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">
-                          No SSL
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(rule)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(rule._id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardContent className="p-0">
+          <RulesTable
+            data={rules}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </CardContent>
+      </Card>
 
-      {/* Mobile Cards */}
-      <div className="lg:hidden space-y-4">
-        {rules.map((rule) => (
-          <Card key={rule._id}>
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium">{rule.name}</h3>
-                    <Badge variant="secondary" className="text-xs">
-                      {rule.type.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <Badge
-                    variant={
-                      rule.action === 'block'
-                        ? 'destructive'
-                        : rule.action === 'redirect'
-                          ? 'secondary'
-                          : 'default'
-                    }
-                    className="text-xs"
-                  >
-                    {rule.action}
-                  </Badge>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Match</p>
-                  <p className="text-sm break-all">{rule.match}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Target</p>
-                  <p className="text-sm break-all">{rule.target}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Agent</p>
-                  <p className="text-sm">{typeof rule.agent === 'object' ? rule.agent.name : 'Unknown'}</p>
-                </div>
-
-                {(rule.type === 'http' || rule.type === 'https') && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">SSL Status</p>
-                    <Badge variant={rule.sslConfig?.enabled ? 'default' : 'secondary'} className="text-xs">
-                      {rule.sslConfig?.enabled ? 'SSL Enabled' : 'No SSL'}
-                    </Badge>
-                  </div>
-                )}
-
-                <div className="flex space-x-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(rule)}
-                    className="flex-1"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(rule._id)}
-                    className="flex-1 text-destructive hover:text-destructive"
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="w-[95vw] max-w-md">
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingRule ? 'Edit Rule' : 'Add New Rule'}
+              {editingRule ? 'Edit Rule' : 'Create New Rule'}
             </DialogTitle>
             <DialogDescription>
-              {editingRule ? 'Update rule configuration' : 'Create a new network rule'}
+              {editingRule
+                ? 'Update the rule configuration below'
+                : 'Fill in the details to create a new routing rule'}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                required
-                placeholder="e.g., BlockMalware"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData({...formData, type: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select rule type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="http">HTTP</SelectItem>
-                  <SelectItem value="https">HTTPS</SelectItem>
-                  <SelectItem value="tcp">TCP</SelectItem>
-                  <SelectItem value="udp">UDP</SelectItem>
-                  <SelectItem value="dns">DNS</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="match">Match Pattern</Label>
-              <Input
-                id="match"
-                type="text"
-                value={formData.match}
-                onChange={(e) => setFormData({...formData, match: e.target.value})}
-                required
-                placeholder="e.g., *.ads.com or /api/v1/*"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="action">Action</Label>
-              <Select value={formData.action} onValueChange={(value) => setFormData({...formData, action: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select action" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="proxy">Proxy</SelectItem>
-                  <SelectItem value="redirect">Redirect</SelectItem>
-                  <SelectItem value="block">Block</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="target">Target</Label>
-              <Input
-                id="target"
-                type="text"
-                value={formData.target}
-                onChange={(e) => setFormData({...formData, target: e.target.value})}
-                required
-                placeholder="e.g., 192.168.1.100:80 or example.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Agent</Label>
-              <Select value={formData.agent} onValueChange={(value) => setFormData({...formData, agent: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {agents.map((agent) => (
-                    <SelectItem key={agent._id} value={agent._id}>
-                      {agent.name} ({agent.ip}:{agent.port})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* SSL Configuration for HTTP/HTTPS rules */}
-            {(formData.type === 'http' || formData.type === 'https') && (
-              <div className="space-y-4 border-t pt-4">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="ruleSslEnabled"
-                    checked={formData.sslConfig.enabled}
-                    onChange={(e) => handleSslConfigChange('enabled', e.target.checked)}
-                    className="rounded"
-                  />
-                  <Label htmlFor="ruleSslEnabled" className="text-sm font-medium">Enable SSL/TLS for this rule</Label>
-                </div>
-
-                {formData.sslConfig.enabled && (
-                  <div className="space-y-3 pl-6 border-l-2 border-muted">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="verifyCertificate"
-                        checked={formData.sslConfig.verifyCertificate}
-                        onChange={(e) => handleSslConfigChange('verifyCertificate', e.target.checked)}
-                        className="rounded"
-                      />
-                      <Label htmlFor="verifyCertificate" className="text-sm">Verify SSL certificate</Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="allowSelfSigned"
-                        checked={formData.sslConfig.allowSelfSigned}
-                        onChange={(e) => handleSslConfigChange('allowSelfSigned', e.target.checked)}
-                        className="rounded"
-                      />
-                      <Label htmlFor="allowSelfSigned" className="text-sm">Allow self-signed certificates</Label>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <DialogFooter className="flex-col sm:flex-row gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setShowModal(false);
-                  setEditingRule(null);
-                  resetForm();
-                }}
-                className="w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={createRuleMutation.isPending || updateRuleMutation.isPending}
-                className="w-full sm:w-auto"
-              >
-                {createRuleMutation.isPending || updateRuleMutation.isPending ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                ) : null}
-                {editingRule ? 'Update Rule' : 'Create Rule'}
-              </Button>
-            </DialogFooter>
-          </form>
+          <RuleForm
+            defaultValues={editingRule}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+            isSubmitting={createMutation.isPending || updateMutation.isPending}
+          />
         </DialogContent>
       </Dialog>
     </div>
