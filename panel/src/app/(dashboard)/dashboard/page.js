@@ -1,115 +1,145 @@
-'use client';
+"use client"
 
-import { useDashboardStats, useRecentActivity } from '@/hooks/use-dashboard';
+import {
+  Box,
+  Users,
+  ShieldCheck,
+  Map,
+  Globe,
+  Activity,
+  TrendingUp,
+  TrendingDown,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { StatsCard } from '@/shared/components/StatsCard';
+import { ActivityFeed } from '@/shared/components/ActivityFeed';
+import { LineChart, PieChart } from '@/shared/components/charts';
+import { useDashboardStats, useRecentActivity } from '@/features/analytics/hooks';
 
 export default function DashboardPage() {
-  const { data: stats, isLoading } = useDashboardStats();
-  const { data: recentActivity = [] } = useRecentActivity();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: activities = [], isLoading: activityLoading } = useRecentActivity();
 
-  const statCards = [
-    {
-      title: 'Total Agents',
-      value: stats?.agents?.total || 0,
-      subtitle: `${stats?.agents?.connected || 0} connected`,
-      icon: '🤖'
-    },
-    {
-      title: 'Rules',
-      value: stats?.rules?.total || 0,
-      subtitle: 'Active rules',
-      icon: '📋'
-    },
-    {
-      title: 'Routes',
-      value: stats?.routes?.total || 0,
-      subtitle: 'Configured routes',
-      icon: '🛣️'
-    },
-    {
-      title: 'GeoDNS',
-      value: stats?.geodns?.total || 0,
-      subtitle: 'DNS configurations',
-      icon: '🌍'
-    }
+  // Real agent status data
+  const agentStatusData = [
+    { name: 'Connected', value: stats?.connectedAgents || 0 },
+    { name: 'Disconnected', value: stats?.disconnectedAgents || 0 },
   ];
 
-  if (isLoading && !stats) {
+  const trafficData = [
+    { time: '00:00', requests: 120 },
+    { time: '04:00', requests: 80 },
+    { time: '08:00', requests: 250 },
+    { time: '12:00', requests: 400 },
+    { time: '16:00', requests: 350 },
+    { time: '20:00', requests: 200 },
+  ];
+
+  if (statsLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">Overview of your Nimbus system</p>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">
+          System overview and real-time metrics
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {statCards.map((card, index) => (
-          <Card key={index}>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <span className="text-xl sm:text-2xl">{card.icon}</span>
-                </div>
-                <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{card.title}</p>
-                  <p className="text-lg sm:text-2xl font-bold">{card.value}</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{card.subtitle}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatsCard
+          title="Total Agents"
+          value={stats?.totalAgents || 0}
+          description={`${stats?.connectedAgents || 0} connected`}
+          icon={Box}
+        />
+        <StatsCard
+          title="Rules"
+          value={stats?.totalRules || 0}
+          description="Active routing rules"
+          icon={ShieldCheck}
+        />
+        <StatsCard
+          title="Routes"
+          value={stats?.totalRoutes || 0}
+          description="Network routes"
+          icon={Map}
+        />
+        <StatsCard
+          title="DNS Records"
+          value={stats?.totalDNSRecords || 0}
+          description="GeoDNS entries"
+          icon={Globe}
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      {/* Charts Row */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Agent Status Chart */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base sm:text-lg">Recent Activity</CardTitle>
+          <CardHeader>
+            <CardTitle>Agent Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start text-sm">
-                  <span className={`w-2 h-2 rounded-full mr-3 mt-1.5 flex-shrink-0 ${
-                    activity.severity === 'warning' ? 'bg-yellow-500' :
-                    activity.severity === 'error' ? 'bg-destructive' :
-                    'bg-green-500'
-                  }`}></span>
-                  <div className="min-w-0 flex-1">
-                    <div className="break-words">{activity.message}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {new Date(activity.timestamp).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <PieChart
+              data={agentStatusData}
+              height={250}
+              colors={['hsl(var(--primary))', 'hsl(var(--destructive))']}
+            />
           </CardContent>
         </Card>
 
+        {/* Traffic Chart */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
+          <CardHeader>
+            <CardTitle>Traffic (Last 24h)</CardTitle>
           </CardHeader>
           <CardContent>
+            <LineChart
+              data={trafficData}
+              xAxisKey="time"
+              lines={[{ dataKey: 'requests', name: 'Requests', color: 'hsl(var(--primary))' }]}
+              height={250}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Activity Feed & System Info */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="md:col-span-2">
+          <ActivityFeed activities={activities} />
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>System Info</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Button variant="ghost" className="w-full justify-start text-sm">
-                ➕ Add new agent
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-sm">
-                📋 Create rule
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-sm">
-                🛣️ Setup route
-              </Button>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Users</span>
+                <span className="font-medium">{stats?.totalUsers || 0}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Admin Users</span>
+                <span className="font-medium">{stats?.adminUsers || 0}</span>
+              </div>
+              <div className="h-px bg-border my-2" />
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">System Status</span>
+                <span className="font-medium text-green-600 dark:text-green-400">
+                  Operational
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>

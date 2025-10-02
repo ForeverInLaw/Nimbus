@@ -11,6 +11,9 @@ export default function Sidebar({ currentPath, isOpen, onClose }) {
     { path: '/rules', label: 'Rules', icon: '📋' },
     { path: '/routes', label: 'Routes', icon: '🛣️' },
     { path: '/geodns', label: 'GeoDNS', icon: '🌍' },
+    { path: '/analytics', label: 'Analytics', icon: '📈' },
+    { path: '/logs', label: 'Audit Logs', icon: '📝' },
+    { path: '/settings', label: 'Settings', icon: '⚙️' },
     { path: '/users', label: 'Users', icon: '👥' },
   ];
 
