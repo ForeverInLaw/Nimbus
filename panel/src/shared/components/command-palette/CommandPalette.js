@@ -26,7 +26,7 @@ import {
 
 /**
  * CommandPalette - Global command palette for quick navigation and actions
- * Triggered by Cmd/Ctrl+K
+ * Triggered by Cmd/Ctrl+Shift+K
  */
 export function CommandPalette() {
   const router = useRouter()
@@ -35,8 +35,9 @@ export function CommandPalette() {
 
   useEffect(() => {
     const down = (e) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === "K" && (e.metaKey || e.ctrlKey) && e.shiftKey) {
         e.preventDefault()
+        e.stopPropagation()
         useCommandPaletteStore.getState().toggle()
       }
     }
@@ -55,7 +56,7 @@ export function CommandPalette() {
     {
       icon: BarChart3,
       label: "Dashboard",
-      onSelect: () => router.push("/"),
+      onSelect: () => router.push("/dashboard"),
     },
     {
       icon: Box,
@@ -95,7 +96,7 @@ export function CommandPalette() {
     {
       icon: FileText,
       label: "Audit Logs",
-      onSelect: () => router.push("/audit-logs"),
+      onSelect: () => router.push("/logs"),
     },
   ]
 
@@ -131,7 +132,7 @@ export function CommandPalette() {
   return (
     <CommandDialog open={isOpen} onOpenChange={close}>
       <CommandInput
-        placeholder="Type a command or search..."
+        placeholder="Type a command or search... (Ctrl+Shift+K)"
         value={search}
         onValueChange={setSearch}
       />
